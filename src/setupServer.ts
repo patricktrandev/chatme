@@ -6,7 +6,9 @@ import cors = require("cors");
 import compression = require("compression");
 import http from "http";
 import { config } from "./config";
+import ApplicationRoutes from "../src/routes";
 const SERVER_PORT = 5000;
+
 export class ChatMeServer {
   private app: Application;
 
@@ -16,6 +18,7 @@ export class ChatMeServer {
   public start(): void {
     this.standardMiddleware(this.app);
     this.securityMiddleware(this.app);
+    this.routesMiddleware(this.app);
     this.startServer(this.app);
   }
 
@@ -54,6 +57,9 @@ export class ChatMeServer {
     } catch (err) {
       console.log(err);
     }
+  }
+  private routesMiddleware(app: Application): void {
+    ApplicationRoutes(app);
   }
 
   private startHttpServer(httpServer: http.Server): void {

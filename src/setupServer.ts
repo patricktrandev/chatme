@@ -5,6 +5,7 @@ import helmet from "helmet";
 import cors = require("cors");
 import compression = require("compression");
 import http from "http";
+import { config } from "./config";
 const SERVER_PORT = 5000;
 export class ChatMeServer {
   private app: Application;
@@ -23,9 +24,9 @@ export class ChatMeServer {
     app.use(
       cookieSession({
         name: "chatmesession",
-        keys: ["test1", "test2"],
+        keys: [config.SECRET_KEY_ONE!, "test2"],
         maxAge: 24 * 3 * 3600000,
-        secure: false,
+        secure: config.NODE_ENV !== "development",
       })
     );
     //set up hpp
@@ -34,7 +35,7 @@ export class ChatMeServer {
     app.use(helmet());
     app.use(
       cors({
-        origin: "*",
+        origin: config.CLIENT_URL,
         credentials: true,
         optionsSuccessStatus: 200,
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],

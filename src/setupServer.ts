@@ -1,13 +1,27 @@
-import { Application, json, urlencoded } from "express";
+import HTTP_STATUS from "http-status-codes";
+import {
+  Application,
+  json,
+  urlencoded,
+  Request,
+  Response,
+  NextFunction,
+} from "express";
 import cookieSession = require("cookie-session");
 import hpp = require("hpp");
+import Logger = require("bunyan");
 import helmet from "helmet";
 import cors = require("cors");
 import compression = require("compression");
 import http from "http";
 import { config } from "./config";
 import ApplicationRoutes from "../src/routes";
+import {
+  CustomError,
+  IErrorResponse,
+} from "./shared/globals/helpers/errorHandler";
 const SERVER_PORT = 5000;
+const logger: Logger = config.createLoggerConfig("server");
 
 export class ChatMeServer {
   private app: Application;
@@ -19,6 +33,7 @@ export class ChatMeServer {
     this.standardMiddleware(this.app);
     this.securityMiddleware(this.app);
     this.routesMiddleware(this.app);
+    this.globalErrorhandler(this.app);
     this.startServer(this.app);
   }
 
@@ -62,9 +77,31 @@ export class ChatMeServer {
     ApplicationRoutes(app);
   }
 
+  private globalErrorhandler(app: Application): void {
+    app.all("*", (req: Request, res: Response) => {
+      res.status(HTTP_STATUS.NOT_FOUND).json({
+        message: `${req.originalUrl} not found.`,
+      });
+    });
+    app.use(
+      (
+        error: IErrorResponse,
+        req: Request,
+        res: Response,
+        next: NextFunction
+      ) => {
+        logger.error(error);
+        if (error instanceof CustomError) {
+          return res.status(error.statusCode).json(error.serializeError());
+        }
+        next();
+      }
+    );
+  }
+
   private startHttpServer(httpServer: http.Server): void {
     httpServer.listen(SERVER_PORT, () => {
-      console.log(`Server running on port ${SERVER_PORT}`);
+      logger.info(`Server running on port ${SERVER_PORT}`);
     });
   }
 }

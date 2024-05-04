@@ -6,6 +6,8 @@ import hpp from "hpp";
 import helmet from "helmet";
 import cors from "cors";
 import compression from "compression";
+import { config } from "./config";
+import applicationRoutes from "./routes";
 export class ChatMeServer {
   private app: Application;
   constructor(app: Application) {
@@ -14,22 +16,23 @@ export class ChatMeServer {
   public start(): void {
     this.securityMiddleware(this.app);
     this.standardMiddleware(this.app);
+    this.routesMiddleware(this.app);
     this.startServer(this.app);
   }
   private securityMiddleware(app: Application): void {
     app.use(
       cookieSession({
         name: "session",
-        keys: ["text1", "text2"],
+        keys: [config.SECRET_KEY_ONE!, config.SECRET_KEY_TWO!],
         maxAge: 72 * 60 * 60 * 1000, // 72 hours
-        secure: false,
+        secure: config.NODE_ENV !== "development",
       })
     );
     app.use(hpp());
     app.use(helmet());
     app.use(
       cors({
-        origin: "*",
+        origin: config.CLIENT_URL,
         credentials: true,
         optionsSuccessStatus: 200,
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -50,9 +53,12 @@ export class ChatMeServer {
       })
     );
   }
+  private routesMiddleware(app: Application) {
+    applicationRoutes(app);
+  }
   private startHttpServer(httpServer: http.Server): void {
-    httpServer.listen(5000, () => {
-      console.log(`Server running on port 5000`);
+    httpServer.listen(Number(`${config.PORT}`), () => {
+      console.log(`Server running on port ${config.PORT}`);
     });
   }
   private async startServer(app: Application): Promise<void> {
